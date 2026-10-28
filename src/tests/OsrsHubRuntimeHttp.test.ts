@@ -1,3 +1,5 @@
+/** @jest-environment node */
+
 import { expect, test } from '@jest/globals';
 import { generateEmptyPlayer } from '@/state';
 import { handleOsrsHubRuntimeRequest } from '@/osrshub-runtime/http-handler';
