@@ -1,3 +1,5 @@
+/** @jest-environment node */
+
 import { handleOsrsHubRuntimeRequest } from './http-handler';
 
 const allowedOrigins = 'https://osrsflipit.prices-app.workers.dev,https://osrshub.pages.dev';
