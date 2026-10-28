@@ -30,6 +30,8 @@ jobs:
           node-version: '24.x'
           cache: 'yarn'
       - run: yarn install
+      - name: Validate Cloudflare Worker bundle (dry run only)
+        run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/osrshub-worker-dry-run
       - name: Build project on tag push
         if: github.ref != 'refs/heads/main'
         run: yarn run build
