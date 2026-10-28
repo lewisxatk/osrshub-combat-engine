@@ -6,6 +6,13 @@ compatibility_date = "2026-10-28"
 # and live health/calculation smoke tests have been verified.
 workers_dev = true
 
+# The upstream calculator imports icon/image modules in shared utility files.
+# Treat those assets as text for bundling; this does not add them to the API
+# response, and the dry-run CI check will surface bundle/size problems.
+[[rules]]
+type = "Text"
+globs = ["**/*.png", "**/*.svg"]
+
 [vars]
 # Replace with the exact deployed OSRS Hub origin before production use.
 # Set this in the Cloudflare dashboard or via Wrangler secrets/vars.
