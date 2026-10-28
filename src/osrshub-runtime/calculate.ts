@@ -160,7 +160,7 @@ export function calculateOsrsHubScenario(
     issues.push('player.spell must be an engine spell object or null');
   }
   if (!isRecord(source.equipment)) issues.push('player.equipment must be an object of equipment slot IDs');
-  const suppliedEquipment = isRecord(source.equipment) ? source.equipment : {};
+  const suppliedEquipment: JsonRecord = isRecord(source.equipment) ? source.equipment : {};
   const equipment = {} as PlayerEquipment;
   for (const slot of EQUIPMENT_SLOTS) {
     equipment[slot] = resolveEquipment(suppliedEquipment[slot], slot, issues);
