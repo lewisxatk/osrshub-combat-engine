@@ -16,4 +16,4 @@ globs = ["**/*.png", "**/*.svg"]
 [vars]
 # Replace with the exact deployed OSRS Hub origin before production use.
 # Set this in the Cloudflare dashboard or via Wrangler secrets/vars.
-ALLOWED_ORIGIN = "https://osrshub.pages.dev"
+ALLOWED_ORIGIN = "https://osrsflipit.prices-app.workers.dev,https://osrshub.pages.dev"
