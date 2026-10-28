@@ -181,7 +181,7 @@ export function calculateOsrsHubScenario(
     return { status: 'review-required', result: null, issues };
   }
 
-  const monster: Monster = { ...canonicalMonster, inputs: inputResult.inputs };
+  const monster: Monster = { ...canonicalMonster, inputs: inputResult.inputs as Monster['inputs'] };
   const player = {
     ...source,
     name: source.name as string,
