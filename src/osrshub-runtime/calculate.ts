@@ -112,20 +112,27 @@ export interface OsrsHubCalculationRequest {
 
 export type OsrsHubCalculationResult =
   | {
-      status: 'calculated';
-      result: {
-        monster: { id: number; name: string };
-        dps: number;
-        maxHit: number;
-        accuracy: number;
-        attackRoll: number;
-        npcDefenceRoll: number;
-        attackSpeed: number;
-        issues: unknown[];
+    status: 'calculated';
+    result: {
+      monster: {
+        id: number;
+        name: string;
       };
-      issues: [];
-    }
-  | { status: 'review-required'; result: null; issues: string[] };
+      dps: number;
+      maxHit: number;
+      accuracy: number;
+      attackRoll: number;
+      npcDefenceRoll: number;
+      attackSpeed: number;
+      issues: unknown[];
+    };
+    issues: [];
+  }
+  | {
+    status: 'review-required';
+    result: null;
+    issues: string[];
+  };
 
 /**
  * Calculate one player-vs-NPC scenario using the actual engine calculator.
@@ -192,9 +199,26 @@ export function calculateOsrsHubScenario(
     prayers: source.prayers as Player['prayers'],
     buffs: source.buffs as Player['buffs'],
     spell: (source.spell ?? null) as Player['spell'],
-    bonuses: { str: 0, ranged_str: 0, magic_str: 0, prayer: 0 },
-    offensive: { stab: 0, slash: 0, crush: 0, magic: 0, ranged: 0 },
-    defensive: { stab: 0, slash: 0, crush: 0, magic: 0, ranged: 0 },
+    bonuses: {
+      str: 0,
+      ranged_str: 0,
+      magic_str: 0,
+      prayer: 0,
+    },
+    offensive: {
+      stab: 0,
+      slash: 0,
+      crush: 0,
+      magic: 0,
+      ranged: 0,
+    },
+    defensive: {
+      stab: 0,
+      slash: 0,
+      crush: 0,
+      magic: 0,
+      ranged: 0,
+    },
     attackSpeed: 4,
   } as Player;
 
