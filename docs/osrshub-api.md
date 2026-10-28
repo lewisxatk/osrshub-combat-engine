@@ -1,49 +1,29 @@
-# OSRS Hub calculation API
+# OSRS Hub calculation runtime integration
 
-This route exposes the upstream GPL-3.0 calculator as an authenticated Next.js API endpoint at `POST /api/osrshub-calculate`.
+## Current state
 
-## Configuration
+The upstream calculator is built as a static site with `output: 'export'`. Next.js API routes are not compatible with this export mode, so the calculator must not be exposed through a `src/pages/api` route in this repository. The first API-route attempt was removed to preserve the upstream build/deployment model.
 
-Set `OSRSHUB_CALC_API_KEY` as a server-side environment secret in the calculator deployment. Send it only from a trusted server-to-server caller using the `Authorization: Bearer <key>` header. Never put this key in Vite client variables, browser code, or a public repository.
+The OSRS Hub website currently has a tested adapter boundary, but it does not yet execute real DPS calculations.
 
-If the secret is absent, the route returns `503`; invalid credentials return `401`. Only POST is accepted. The route does not log request bodies.
+## Required next architecture step
 
-## Request contract
+Build a separate calculation service or a browser-compatible engine bundle, then connect it to OSRS Hub. Before selecting the runtime, verify the deployment target, canonical dataset sizes, dependency compatibility, and payload limits. Do not switch off static export or alter the upstream deployment workflow merely to make an API route compile.
 
-```json
-{
-  "player": "<complete engine-native Player object>",
-  "monster": "<complete engine-native Monster object>"
-}
-```
+## Input requirements
 
-The placeholders above describe typed objects, not literal strings. The caller must provide canonical engine equipment records, calculated equipment bonuses, style, skills and boosts, prayers/buffs, and a canonical monster record with its required inputs. OSRS Hub's current adapter envelope (item IDs + skill levels) is not sufficient by itself; the canonical data/player builder is a separate integration step.
+The calculator requires complete engine-native `Player` and `Monster` structures. The website adapter's IDs and skill levels are not sufficient. A trusted builder must resolve canonical item and monster records, equipment bonuses, attack style/speed, boosts, prayers, buffs, spells, monster defence/attributes and mechanic inputs.
 
-## Success response
+Never accept client-supplied equipment bonuses as authoritative. Do not return estimated or fabricated DPS when data is missing.
 
-```json
-{
-  "ok": true,
-  "engine": "weirdgloop-osrs-dps-calc",
-  "metrics": {
-    "dps": 0,
-    "maxHit": 0,
-    "accuracy": 0,
-    "maxAttackRoll": 0,
-    "npcDefenceRoll": 0,
-    "expectedDamage": 0,
-    "attackSpeedTicks": 0,
-    "ttkSeconds": 0
-  }
-}
-```
+## Validation gates
 
-Numbers above are schema examples, not calculated game results. Errors use `{ "ok": false, "error": "..." }`. Invalid or unsupported inputs fail closed rather than receiving fabricated metrics.
+1. Reproduce the existing engine regression case for an empty player against an Abyssal demon (max hit 11, DPS approximately 0.658, attack roll 6848, NPC defence roll 12096, accuracy approximately 28.30%).
+2. Add canonical item/monster resolver tests and melee, ranged and magic regression cases.
+3. Verify supported/partial/unsupported special attacks and boss mechanics are surfaced honestly.
+4. Test the chosen runtime under the real deployment target before connecting the Combat Studio UI.
+5. Preserve the upstream GPL-3.0 licence and notices for copied/adapted code.
 
-## Important limitations
+## Security note
 
-- This endpoint does not itself deploy the service or connect the OSRS Hub website.
-- It expects engine-native objects; do not forward untrusted browser-supplied bonuses as authoritative. The production caller should construct/validate those objects from canonical engine data.
-- The key is a basic service-to-service gate, not a substitute for hosting-level rate limits and monitoring.
-- Special-attack support varies by weapon; this endpoint currently calculates the standard player-vs-NPC calculation, not a guaranteed special-attack comparison.
-- Preserve the original Weird Gloop GPL-3.0 license and notices when deploying or distributing this engine.
+If a separate server-side API is selected, use a server-side secret, rate limiting and monitoring. Never embed a shared API key in browser code or public Vite variables.
