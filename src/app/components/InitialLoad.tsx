@@ -19,7 +19,7 @@ const InitialLoad: React.FC = observer(() => {
 
   useEffect(() => {
     const doFirstLoad = async () => {
-      const id = searchParams.get('id');
+      const id = searchParams?.get('id') ?? null;
       if (id) {
         // If there was a share ID provided, load the data for it into the calculator
         await store.loadShortlink(id);
@@ -48,7 +48,7 @@ const InitialLoad: React.FC = observer(() => {
         store.startStorageUpdater();
       }
 
-      const monster = searchParams.get('monster');
+      const monster = searchParams?.get('monster') ?? null;
       if (monster) {
         const target = store.availableMonsters.find((m) => m.id === parseInt(monster));
         if (target) {
