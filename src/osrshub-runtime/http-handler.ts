@@ -42,20 +42,26 @@ export async function handleOsrsHubRuntimeRequest(
 ): Promise<Response> {
   const url = new URL(request.url);
   const requestOrigin = request.headers.get('Origin') ?? undefined;
-  const allowedOrigin = env.ALLOWED_ORIGIN;
+  // ALLOWED_ORIGIN accepts a comma-separated exact-origin allowlist. This
+  // supports the production Worker origin and the Pages preview/custom origin
+  // without weakening checks to wildcard or substring matching.
+  const allowedOrigins = (env.ALLOWED_ORIGIN ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const originAllowed = !requestOrigin
+    || allowedOrigins.length === 0
+    || allowedOrigins.includes(requestOrigin);
 
-  if (requestOrigin && allowedOrigin && requestOrigin !== allowedOrigin) {
+  if (!originAllowed) {
     return response({ status: 'rejected', error: 'Origin is not allowed.' }, 403);
   }
 
-  const corsOrigin = requestOrigin && (!allowedOrigin || requestOrigin === allowedOrigin)
+  const corsOrigin = requestOrigin && (allowedOrigins.length === 0 || allowedOrigins.includes(requestOrigin))
     ? requestOrigin
     : undefined;
 
   if (request.method === 'OPTIONS') {
-    if (requestOrigin && allowedOrigin && requestOrigin !== allowedOrigin) {
-      return response({ status: 'rejected', error: 'Origin is not allowed.' }, 403);
-    }
     const headers = new Headers();
     headers.set('Allow', 'GET, POST, OPTIONS');
     headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
