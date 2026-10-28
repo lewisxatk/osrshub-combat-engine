@@ -30,9 +30,26 @@ test('runtime resolves equipment by canonical ID instead of trusting supplied st
     speed: 1,
     category: 'fake' as never,
     isTwoHanded: false,
-    bonuses: { str: 999, ranged_str: 999, magic_str: 999, prayer: 999 },
-    offensive: { stab: 999, slash: 999, crush: 999, magic: 999, ranged: 999 },
-    defensive: { stab: 999, slash: 999, crush: 999, magic: 999, ranged: 999 },
+    bonuses: {
+      str: 999,
+      ranged_str: 999,
+      magic_str: 999,
+      prayer: 999,
+    },
+    offensive: {
+      stab: 999,
+      slash: 999,
+      crush: 999,
+      magic: 999,
+      ranged: 999,
+    },
+    defensive: {
+      stab: 999,
+      slash: 999,
+      crush: 999,
+      magic: 999,
+      ranged: 999,
+    },
   };
 
   const result = calculateOsrsHubScenario({ player, monsterId: 415 });
