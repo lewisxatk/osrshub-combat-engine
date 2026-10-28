@@ -1,0 +1,12 @@
+name = "osrshub-combat-runtime"
+main = "src/osrshub-runtime/worker.ts"
+compatibility_date = "2026-10-28"
+
+# Deployments are deliberately manual until the bundle size, account limits,
+# and live health/calculation smoke tests have been verified.
+workers_dev = true
+
+[vars]
+# Replace with the exact deployed OSRS Hub origin before production use.
+# Set this in the Cloudflare dashboard or via Wrangler secrets/vars.
+ALLOWED_ORIGIN = "https://osrshub.pages.dev"
