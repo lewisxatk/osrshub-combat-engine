@@ -32,24 +32,32 @@ const EQUIPMENT_SLOTS = [
 type Slot = typeof EQUIPMENT_SLOTS[number];
 type JsonRecord = Record<string, unknown>;
 
+const isRecord = (value: unknown): value is JsonRecord => (
+  value !== null && typeof value === 'object' && !Array.isArray(value)
+);
+
 export function listOsrsHubSpells() {
-  return spells.map(({ name, image, max_hit, spellbook, element }) => ({ name, image, max_hit, spellbook, element }));
+  return spells.map(({ name, image, max_hit, spellbook, element }) => ({
+    name,
+    image,
+    max_hit,
+    spellbook,
+    element,
+  }));
 }
 
 function resolveSpell(value: unknown, issues: string[]) {
   if (value === null || value === undefined) return null;
-  if (!isRecord(value) || typeof value.name !== "string" || !value.name.trim()) {
-    issues.push("player.spell must be null or contain a canonical spell name");
+  if (!isRecord(value) || typeof value.name !== 'string' || !value.name.trim()) {
+    issues.push('player.spell must be null or contain a canonical spell name');
     return null;
   }
   const canonical = spellByName(value.name);
-  if (!canonical) issues.push("player.spell name " + JSON.stringify(value.name) + " was not found in the engine spell dataset");
+  if (!canonical) {
+    issues.push(`player.spell name ${JSON.stringify(value.name)} was not found in the engine spell dataset`);
+  }
   return canonical;
 }
-
-const isRecord = (value: unknown): value is JsonRecord => (
-  value !== null && typeof value === 'object' && !Array.isArray(value)
-);
 
 function validateSkills(value: unknown, label: string, issues: string[]) {
   if (!isRecord(value)) {
