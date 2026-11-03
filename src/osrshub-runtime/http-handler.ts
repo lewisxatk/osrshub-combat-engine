@@ -6,6 +6,7 @@
  */
 import {
   calculateOsrsHubScenario,
+  listOsrsHubSpells,
   OsrsHubCalculationRequest,
 } from './calculate';
 
