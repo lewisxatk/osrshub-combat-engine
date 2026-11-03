@@ -37,7 +37,13 @@ const isRecord = (value: unknown): value is JsonRecord => (
 );
 
 export function listOsrsHubSpells() {
-  return spells.map(({ name, image, max_hit, spellbook, element }) => ({
+  return spells.map(({
+    name,
+    image,
+    max_hit,
+    spellbook,
+    element,
+  }) => ({
     name,
     image,
     max_hit,
