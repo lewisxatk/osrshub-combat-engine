@@ -18,6 +18,7 @@ import {
 import { getMonsters, INITIAL_MONSTER_INPUTS } from '@/lib/Monsters';
 import { Player, PlayerEquipment } from '@/types/Player';
 import { Monster } from '@/types/Monster';
+import { spellByName, spells } from '@/types/Spell';
 
 const SKILL_KEYS = [
   'atk', 'def', 'hp', 'magic', 'prayer', 'ranged', 'str',
@@ -30,6 +31,21 @@ const EQUIPMENT_SLOTS = [
 
 type Slot = typeof EQUIPMENT_SLOTS[number];
 type JsonRecord = Record<string, unknown>;
+
+export function listOsrsHubSpells() {
+  return spells.map(({ name, image, max_hit, spellbook, element }) => ({ name, image, max_hit, spellbook, element }));
+}
+
+function resolveSpell(value: unknown, issues: string[]) {
+  if (value === null || value === undefined) return null;
+  if (!isRecord(value) || typeof value.name !== "string" || !value.name.trim()) {
+    issues.push("player.spell must be null or contain a canonical spell name");
+    return null;
+  }
+  const canonical = spellByName(value.name);
+  if (!canonical) issues.push("player.spell name " + JSON.stringify(value.name) + " was not found in the engine spell dataset");
+  return canonical;
+}
 
 const isRecord = (value: unknown): value is JsonRecord => (
   value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -163,9 +179,7 @@ export function calculateOsrsHubScenario(
   }
   if (!Array.isArray(source.prayers)) issues.push('player.prayers must be an array');
   if (!isRecord(source.buffs)) issues.push('player.buffs must be an object');
-  if (source.spell !== null && source.spell !== undefined && !isRecord(source.spell)) {
-    issues.push('player.spell must be an engine spell object or null');
-  }
+  const canonicalSpell = resolveSpell(source.spell, issues);
   if (!isRecord(source.equipment)) issues.push('player.equipment must be an object of equipment slot IDs');
   const suppliedEquipment: JsonRecord = isRecord(source.equipment) ? source.equipment : {};
   const equipment = {} as PlayerEquipment;
@@ -198,7 +212,7 @@ export function calculateOsrsHubScenario(
     equipment,
     prayers: source.prayers as Player['prayers'],
     buffs: source.buffs as Player['buffs'],
-    spell: (source.spell ?? null) as Player['spell'],
+    spell: canonicalSpell,
     bonuses: {
       str: 0,
       ranged_str: 0,
