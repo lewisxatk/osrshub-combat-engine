@@ -52,14 +52,14 @@ export function listOsrsHubSpells() {
   }));
 }
 
-export function listOsrsHubMonsters({ offset = 0, limit = 500 } = {}) {
+export function listOsrsHubMonsters({ offset = 0, limit = 500 }: { offset?: number; limit?: number } = {}) {
   const safeOffset = Math.max(0, Math.floor(Number(offset) || 0));
   const safeLimit = Math.min(1000, Math.max(1, Math.floor(Number(limit) || 500)));
   const rows = getMonsters();
   return { total: rows.length, offset: safeOffset, limit: safeLimit, results: rows.slice(safeOffset, safeOffset + safeLimit) };
 }
 
-export function listOsrsHubEquipment({ slot, offset = 0, limit = 500 } = {}) {
+export function listOsrsHubEquipment({ slot, offset = 0, limit = 500 }: { slot?: string; offset?: number; limit?: number } = {}) {
   const safeOffset = Math.max(0, Math.floor(Number(offset) || 0));
   const safeLimit = Math.min(1000, Math.max(1, Math.floor(Number(limit) || 500)));
   const rows = slot
