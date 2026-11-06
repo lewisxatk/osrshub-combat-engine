@@ -2,6 +2,8 @@ name: Deploy OSRS Hub Test Combat Runtime (isolated)
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
 
 permissions:
   contents: read
