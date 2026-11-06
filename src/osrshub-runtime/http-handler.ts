@@ -7,6 +7,8 @@
 import {
   calculateOsrsHubScenario,
   listOsrsHubSpells,
+  listOsrsHubMonsters,
+  listOsrsHubEquipment,
   OsrsHubCalculationRequest,
 } from './calculate';
 
@@ -80,6 +82,29 @@ export async function handleOsrsHubRuntimeRequest(
       return response({ status: 'rejected', error: 'Method not allowed.' }, 405, corsOrigin);
     }
     return response({ status: 'ok', service: 'osrshub-combat-runtime' }, 200, corsOrigin);
+  }
+
+  if (url.pathname === '/api/monsters') {
+    if (request.method !== 'GET') return response({ status: 'rejected', error: 'Method not allowed.' }, 405, corsOrigin);
+    const offset = Number(url.searchParams.get('offset') ?? 0);
+    const limit = Number(url.searchParams.get('limit') ?? 500);
+    if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > 1000) {
+      return response({ status: 'rejected', error: 'offset must be >= 0 and limit must be between 1 and 1000.' }, 400, corsOrigin);
+    }
+    return response({ status: 'ok', ...listOsrsHubMonsters({ offset, limit }) }, 200, corsOrigin);
+  }
+
+  if (url.pathname === '/api/equipment') {
+    if (request.method !== 'GET') return response({ status: 'rejected', error: 'Method not allowed.' }, 405, corsOrigin);
+    const offset = Number(url.searchParams.get('offset') ?? 0);
+    const limit = Number(url.searchParams.get('limit') ?? 500);
+    const slot = url.searchParams.get('slot') ?? undefined;
+    const validSlots = ['head', 'cape', 'neck', 'ammo', 'weapon', 'body', 'shield', 'legs', 'hands', 'feet', 'ring'];
+    if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > 1000
+      || (slot !== undefined && !validSlots.includes(slot))) {
+      return response({ status: 'rejected', error: 'Invalid equipment catalogue query.' }, 400, corsOrigin);
+    }
+    return response({ status: 'ok', ...listOsrsHubEquipment({ slot, offset, limit }) }, 200, corsOrigin);
   }
 
   if (url.pathname === '/api/spells') {

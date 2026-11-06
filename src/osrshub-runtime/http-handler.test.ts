@@ -65,3 +65,36 @@ describe('OSRS Hub runtime CORS allowlist', () => {
     expect(response.status).toBe(403);
   });
 });
+
+describe('canonical catalogue endpoints', () => {
+  test('returns paginated canonical monsters with their engine IDs', async () => {
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/monsters?offset=0&limit=3'),
+    );
+    const payload = await response.json() as { status: string; total: number; results: Array<{ id: number; name: string }> };
+    expect(response.status).toBe(200);
+    expect(payload.status).toBe('ok');
+    expect(payload.total).toBeGreaterThan(0);
+    expect(payload.results).toHaveLength(3);
+    expect(payload.results.every((row) => Number.isInteger(row.id) && row.id > 0 && row.name)).toBe(true);
+  });
+
+  test('returns canonical equipment filtered by slot', async () => {
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/equipment?slot=weapon&limit=5'),
+    );
+    const payload = await response.json() as { status: string; total: number; results: Array<{ id: number; name: string; slot: string }> };
+    expect(response.status).toBe(200);
+    expect(payload.status).toBe('ok');
+    expect(payload.total).toBeGreaterThan(0);
+    expect(payload.results.length).toBeGreaterThan(0);
+    expect(payload.results.every((row) => Number.isInteger(row.id) && row.id > 0 && row.slot === 'weapon')).toBe(true);
+  });
+
+  test('rejects invalid catalogue pagination', async () => {
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/monsters?offset=-1&limit=5'),
+    );
+    expect(response.status).toBe(400);
+  });
+});
