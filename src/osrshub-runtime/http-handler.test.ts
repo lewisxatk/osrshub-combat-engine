@@ -66,7 +66,6 @@ describe('OSRS Hub runtime CORS allowlist', () => {
   });
 });
 
-
 describe('canonical catalogue endpoints', () => {
   test('returns paginated canonical monsters with their engine IDs', async () => {
     const response = await handleOsrsHubRuntimeRequest(
