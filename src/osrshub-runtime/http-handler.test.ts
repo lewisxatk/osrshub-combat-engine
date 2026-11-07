@@ -2,7 +2,7 @@
 
 import { handleOsrsHubRuntimeRequest } from './http-handler';
 
-const allowedOrigins = 'https://osrsflipit.prices-app.workers.dev,https://osrshub.pages.dev';
+const allowedOrigins = 'https://osrsflipit.prices-app.workers.dev,https://osrshub.pages.dev,https://osrshubtest.prices-app.workers.dev';
 
 describe('OSRS Hub runtime CORS allowlist', () => {
   test.each([
@@ -24,6 +24,19 @@ describe('OSRS Hub runtime CORS allowlist', () => {
       status: 'ok',
       service: 'osrshub-combat-runtime',
     });
+  });
+
+  test('allows the isolated OSRS Hub Test website to read the canonical catalogue', async () => {
+    const origin = 'https://osrshubtest.prices-app.workers.dev';
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/monsters?limit=1', {
+        headers: { Origin: origin, Accept: 'application/json' },
+      }),
+      { ALLOWED_ORIGIN: allowedOrigins },
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(origin);
+    expect((await response.json()).status).toBe('ok');
   });
 
   test('rejects an unlisted origin exactly, not by substring', async () => {
@@ -50,7 +63,7 @@ describe('OSRS Hub runtime CORS allowlist', () => {
     expect(response.status).toBe(204);
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://osrsflipit.prices-app.workers.dev');
     expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, POST, OPTIONS');
-    expect(response.headers.get('Access-Control-Allow-Headers')).toBe('Content-Type');
+    expect(response.headers.get('Access-Control-Allow-Headers')).toBe('Accept, Content-Type');
   });
 
   test('rejects preflight from an unlisted origin', async () => {
