@@ -1,6 +1,7 @@
 /** @jest-environment node */
 
 import { handleOsrsHubRuntimeRequest } from './http-handler';
+import { resolveOsrsHubMonster } from './calculate';
 
 const allowedOrigins = 'https://osrsflipit.prices-app.workers.dev,https://osrshub.pages.dev,https://osrshubtest.prices-app.workers.dev';
 
@@ -90,6 +91,55 @@ describe('canonical catalogue endpoints', () => {
     expect(payload.total).toBeGreaterThan(0);
     expect(payload.results).toHaveLength(3);
     expect(payload.results.every((row) => Number.isInteger(row.id) && row.id > 0 && row.name)).toBe(true);
+  });
+
+  test('preserves every canonical monster variant and resolves duplicate IDs by stable record index', async () => {
+    const all: Array<{ id: number; name: string; version?: string; recordIndex: number }> = [];
+    const first = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/monsters?offset=0&limit=1000'),
+    );
+    const firstPayload = await first.json() as { total: number; results: Array<{ id: number; name: string; version?: string; recordIndex: number }> };
+    expect(first.status).toBe(200);
+    all.push(...firstPayload.results);
+    for (let offset = 1000; offset < firstPayload.total; offset += 1000) {
+      const response = await handleOsrsHubRuntimeRequest(
+        new Request(`https://combat.example.workers.dev/api/monsters?offset=${offset}&limit=1000`),
+      );
+      const payload = await response.json() as { total: number; results: Array<{ id: number; name: string; version?: string; recordIndex: number }> };
+      expect(payload.total).toBe(firstPayload.total);
+      all.push(...payload.results);
+    }
+
+    expect(all).toHaveLength(firstPayload.total);
+    expect(all.every((row, index) => row.recordIndex === index)).toBe(true);
+    const firstById = new Map<number, { row: typeof all[number]; count: number }>();
+    const duplicate = all.find(row => {
+      const previous = firstById.get(row.id);
+      if (previous) return true;
+      firstById.set(row.id, { row, count: 1 });
+      return false;
+    });
+    expect(duplicate).toBeDefined();
+    const matches = all.filter(row => row.id === duplicate!.id);
+    expect(resolveOsrsHubMonster({ monsterId: duplicate!.id }).status).toBe('ambiguous');
+
+    const selected = matches[matches.length - 1];
+    const resolved = resolveOsrsHubMonster({
+      monsterId: selected.id,
+      monsterIndex: selected.recordIndex,
+      monsterName: selected.name,
+      monsterVersion: selected.version ?? '',
+    });
+    expect(resolved.status).toBe('resolved');
+    expect(resolved.recordIndex).toBe(selected.recordIndex);
+    expect(resolved.record?.version ?? '').toBe(selected.version ?? '');
+
+    const mismatch = resolveOsrsHubMonster({
+      monsterId: selected.id,
+      monsterIndex: selected.recordIndex,
+      monsterName: 'Not the selected monster',
+    });
+    expect(mismatch.status).toBe('identity-mismatch');
   });
 
   test('returns canonical equipment filtered by slot', async () => {
