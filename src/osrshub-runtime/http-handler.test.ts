@@ -98,29 +98,42 @@ describe('canonical catalogue endpoints', () => {
     const first = await handleOsrsHubRuntimeRequest(
       new Request('https://combat.example.workers.dev/api/monsters?offset=0&limit=1000'),
     );
-    const firstPayload = await first.json() as { total: number; results: Array<{ id: number; name: string; version?: string; recordIndex: number }> };
+    const firstPayload = await first.json() as {
+      total: number;
+      results: Array<{ id: number; name: string; version?: string; recordIndex: number }>;
+    };
     expect(first.status).toBe(200);
     all.push(...firstPayload.results);
-    for (let offset = 1000; offset < firstPayload.total; offset += 1000) {
+
+    const offsets = Array.from(
+      { length: Math.ceil(Math.max(0, firstPayload.total - 1000) / 1000) },
+      (_, index) => (index + 1) * 1000,
+    );
+    const pageRows = await Promise.all(offsets.map(async (offset) => {
       const response = await handleOsrsHubRuntimeRequest(
         new Request(`https://combat.example.workers.dev/api/monsters?offset=${offset}&limit=1000`),
       );
-      const payload = await response.json() as { total: number; results: Array<{ id: number; name: string; version?: string; recordIndex: number }> };
+      const payload = await response.json() as {
+        total: number;
+        results: Array<{ id: number; name: string; version?: string; recordIndex: number }>;
+      };
+      expect(response.status).toBe(200);
       expect(payload.total).toBe(firstPayload.total);
-      all.push(...payload.results);
-    }
+      return payload.results;
+    }));
+    all.push(...pageRows.flat());
 
     expect(all).toHaveLength(firstPayload.total);
     expect(all.every((row, index) => row.recordIndex === index)).toBe(true);
     const firstById = new Map<number, { row: typeof all[number]; count: number }>();
-    const duplicate = all.find(row => {
+    const duplicate = all.find((row) => {
       const previous = firstById.get(row.id);
       if (previous) return true;
       firstById.set(row.id, { row, count: 1 });
       return false;
     });
     expect(duplicate).toBeDefined();
-    const matches = all.filter(row => row.id === duplicate!.id);
+    const matches = all.filter((row) => row.id === duplicate!.id);
     expect(resolveOsrsHubMonster({ monsterId: duplicate!.id }).status).toBe('ambiguous');
 
     const selected = matches[matches.length - 1];
