@@ -83,20 +83,40 @@ export function resolveOsrsHubMonster(identity: OsrsHubMonsterIdentity) {
   const rows = getMonsters();
   const { monsterId, monsterIndex, monsterName, monsterVersion } = identity;
   if (!Number.isInteger(monsterId) || monsterId <= 0) {
-    return { status: 'invalid-id' as const, record: null, recordIndex: null, issues: ['monsterId must be a positive canonical monster ID'] };
+    return {
+      status: 'invalid-id' as const,
+      record: null,
+      recordIndex: null,
+      issues: ['monsterId must be a positive canonical monster ID'],
+    };
   }
 
   if (monsterIndex !== undefined) {
     if (!Number.isInteger(monsterIndex) || monsterIndex < 0 || monsterIndex >= rows.length) {
-      return { status: 'not-found' as const, record: null, recordIndex: null, issues: ['monsterIndex is outside the canonical engine catalogue'] };
+      return {
+        status: 'not-found' as const,
+        record: null,
+        recordIndex: null,
+        issues: ['monsterIndex is outside the canonical engine catalogue'],
+      };
     }
     const record = rows[monsterIndex];
     if (record.id !== monsterId
       || (monsterName !== undefined && record.name !== monsterName)
       || (monsterVersion !== undefined && (record.version ?? '') !== monsterVersion)) {
-      return { status: 'identity-mismatch' as const, record: null, recordIndex: null, issues: ['monsterIndex does not match the supplied canonical monster identity'] };
+      return {
+        status: 'identity-mismatch' as const,
+        record: null,
+        recordIndex: null,
+        issues: ['monsterIndex does not match the supplied canonical monster identity'],
+      };
     }
-    return { status: 'resolved' as const, record, recordIndex: monsterIndex, issues: [] as string[] };
+    return {
+      status: 'resolved' as const,
+      record,
+      recordIndex: monsterIndex,
+      issues: [] as string[],
+    };
   }
 
   let matches = rows.map((record, index) => ({ record, index }))
@@ -105,7 +125,12 @@ export function resolveOsrsHubMonster(identity: OsrsHubMonsterIdentity) {
   if (monsterVersion !== undefined) matches = matches.filter(({ record }) => (record.version ?? '') === monsterVersion);
 
   if (matches.length === 0) {
-    return { status: 'not-found' as const, record: null, recordIndex: null, issues: [`monster ID ${monsterId} was not found in the engine monster dataset`] };
+    return {
+      status: 'not-found' as const,
+      record: null,
+      recordIndex: null,
+      issues: [`monster ID ${monsterId} was not found in the engine monster dataset`],
+    };
   }
   if (matches.length > 1) {
     return {
