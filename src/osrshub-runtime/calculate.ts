@@ -62,7 +62,94 @@ export function listOsrsHubMonsters(
     total: rows.length,
     offset: safeOffset,
     limit: safeLimit,
-    results: rows.slice(safeOffset, safeOffset + safeLimit),
+    // Monster IDs are not unique across every OSRS variant in the source
+    // catalogue. recordIndex is the stable global identity used for browsing
+    // and calculations; never collapse variants by numeric NPC ID alone.
+    results: rows.slice(safeOffset, safeOffset + safeLimit).map((monster, index) => ({
+      ...monster,
+      recordIndex: safeOffset + index,
+    })),
+  };
+}
+
+export type OsrsHubMonsterIdentity = {
+  monsterId: number;
+  monsterIndex?: number;
+  monsterName?: string;
+  monsterVersion?: string;
+};
+
+export function resolveOsrsHubMonster(identity: OsrsHubMonsterIdentity) {
+  const rows = getMonsters();
+  const {
+    monsterId,
+    monsterIndex,
+    monsterName,
+    monsterVersion,
+  } = identity;
+  if (!Number.isInteger(monsterId) || monsterId <= 0) {
+    return {
+      status: 'invalid-id' as const,
+      record: null,
+      recordIndex: null,
+      issues: ['monsterId must be a positive canonical monster ID'],
+    };
+  }
+
+  if (monsterIndex !== undefined) {
+    if (!Number.isInteger(monsterIndex) || monsterIndex < 0 || monsterIndex >= rows.length) {
+      return {
+        status: 'not-found' as const,
+        record: null,
+        recordIndex: null,
+        issues: ['monsterIndex is outside the canonical engine catalogue'],
+      };
+    }
+    const record = rows[monsterIndex];
+    if (record.id !== monsterId
+      || (monsterName !== undefined && record.name !== monsterName)
+      || (monsterVersion !== undefined && (record.version ?? '') !== monsterVersion)) {
+      return {
+        status: 'identity-mismatch' as const,
+        record: null,
+        recordIndex: null,
+        issues: ['monsterIndex does not match the supplied canonical monster identity'],
+      };
+    }
+    return {
+      status: 'resolved' as const,
+      record,
+      recordIndex: monsterIndex,
+      issues: [] as string[],
+    };
+  }
+
+  let matches = rows.map((record, index) => ({ record, index }))
+    .filter(({ record }) => record.id === monsterId);
+  if (monsterName !== undefined) matches = matches.filter(({ record }) => record.name === monsterName);
+  if (monsterVersion !== undefined) matches = matches.filter(({ record }) => (record.version ?? '') === monsterVersion);
+
+  if (matches.length === 0) {
+    return {
+      status: 'not-found' as const,
+      record: null,
+      recordIndex: null,
+      issues: [`monster ID ${monsterId} was not found in the engine monster dataset`],
+    };
+  }
+  if (matches.length > 1) {
+    return {
+      status: 'ambiguous' as const,
+      record: null,
+      recordIndex: null,
+      issues: [`monster ID ${monsterId} matches ${matches.length} canonical variants; select the exact catalogue entry`],
+    };
+  }
+  return {
+    status: 'resolved' as const,
+    record: matches[0].record,
+    recordIndex: matches[0].index,
+    issues: [] as string[],
   };
 }
 
@@ -167,6 +254,10 @@ function buildMonsterInputs(overrides: unknown, monsterHp: number) {
 export interface OsrsHubCalculationRequest {
   player: Partial<Player> & { equipment?: Partial<PlayerEquipment> };
   monsterId: number;
+  /** Global index in the engine's canonical monster array; required when an ID has multiple variants. */
+  monsterIndex?: number;
+  monsterName?: string;
+  monsterVersion?: string;
   monsterInputs?: Partial<Monster['inputs']>;
 }
 
@@ -177,6 +268,8 @@ export type OsrsHubCalculationResult =
       monster: {
         id: number;
         name: string;
+        version: string;
+        recordIndex: number;
       };
       dps: number;
       maxHit: number;
@@ -234,8 +327,14 @@ export function calculateOsrsHubScenario(
     if (!EQUIPMENT_SLOTS.includes(slot as Slot)) issues.push(`player.equipment has unknown slot: ${slot}`);
   }
 
-  const canonicalMonster = getMonsters().find((monster) => monster.id === request.monsterId);
-  if (!canonicalMonster) issues.push(`monster ID ${request.monsterId} was not found in the engine monster dataset`);
+  const resolvedMonster = resolveOsrsHubMonster({
+    monsterId: request.monsterId,
+    ...(request.monsterIndex === undefined ? {} : { monsterIndex: request.monsterIndex }),
+    ...(request.monsterName === undefined ? {} : { monsterName: request.monsterName }),
+    ...(request.monsterVersion === undefined ? {} : { monsterVersion: request.monsterVersion }),
+  });
+  const canonicalMonster = resolvedMonster.record;
+  if (!canonicalMonster) issues.push(...resolvedMonster.issues);
   if (issues.length || !canonicalMonster) {
     return { status: 'review-required', result: null, issues };
   }
@@ -306,7 +405,12 @@ export function calculateOsrsHubScenario(
     status: 'calculated',
     issues: [],
     result: {
-      monster: { id: monster.id, name: monster.name },
+      monster: {
+        id: monster.id,
+        name: monster.name,
+        version: monster.version ?? '',
+        recordIndex: resolvedMonster.recordIndex ?? -1,
+      },
       dps,
       maxHit,
       accuracy,
