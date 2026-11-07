@@ -81,7 +81,12 @@ export type OsrsHubMonsterIdentity = {
 
 export function resolveOsrsHubMonster(identity: OsrsHubMonsterIdentity) {
   const rows = getMonsters();
-  const { monsterId, monsterIndex, monsterName, monsterVersion } = identity;
+  const {
+    monsterId,
+    monsterIndex,
+    monsterName,
+    monsterVersion,
+  } = identity;
   if (!Number.isInteger(monsterId) || monsterId <= 0) {
     return {
       status: 'invalid-id' as const,
