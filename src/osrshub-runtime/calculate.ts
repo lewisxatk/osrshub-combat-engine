@@ -238,6 +238,8 @@ export type OsrsHubCalculationResult =
       monster: {
         id: number;
         name: string;
+        version: string;
+        recordIndex: number;
       };
       dps: number;
       maxHit: number;
@@ -377,7 +379,7 @@ export function calculateOsrsHubScenario(
         id: monster.id,
         name: monster.name,
         version: monster.version ?? '',
-        recordIndex: resolvedMonster.recordIndex,
+        recordIndex: resolvedMonster.recordIndex ?? -1,
       },
       dps,
       maxHit,
