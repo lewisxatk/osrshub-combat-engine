@@ -68,7 +68,7 @@ export async function handleOsrsHubRuntimeRequest(
     const headers = new Headers();
     headers.set('Allow', 'GET, POST, OPTIONS');
     headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    headers.set('Access-Control-Allow-Headers', 'Content-Type');
+    headers.set('Access-Control-Allow-Headers', 'Accept, Content-Type');
     headers.set('Access-Control-Max-Age', '600');
     if (corsOrigin) {
       headers.set('Access-Control-Allow-Origin', corsOrigin);
