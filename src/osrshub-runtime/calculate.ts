@@ -11,6 +11,8 @@
 import PlayerVsNPCCalc from '@/lib/PlayerVsNPCCalc';
 import {
   availableEquipment,
+  ammoApplicability,
+  AmmoApplicability,
   calculateAttackSpeed,
   calculateEquipmentBonusesFromGear,
   getCanonicalItemId,
@@ -220,6 +222,43 @@ export function listOsrsHubEquipment(
     offset: safeOffset,
     limit: safeLimit,
     results: rows.slice(safeOffset, safeOffset + safeLimit),
+  };
+}
+
+/**
+ * Resolve ammunition compatibility using the engine's own item-ID matrix.
+ * "not-required" means the weapon generates/does not consume an ammo-slot item;
+ * the UI must not invent arrows, bolts or javelins for it.
+ */
+export function getOsrsHubAmmoCompatibility(weaponId: number) {
+  if (!Number.isInteger(weaponId) || weaponId <= 0) {
+    return { status: 'invalid' as const, issue: 'weaponId must be a positive item ID' };
+  }
+  const weapon = availableEquipment.find((item) => item.id === weaponId);
+  if (!weapon || weapon.slot !== 'weapon') {
+    return { status: 'not-found' as const, weaponId, issue: 'Weapon ID was not found in the canonical engine equipment dataset.' };
+  }
+  const requirement = ammoApplicability(weaponId);
+  if (requirement !== AmmoApplicability.INVALID) {
+    return {
+      status: 'not-required' as const,
+      weaponId,
+      weaponName: weapon.name,
+      weaponVersion: weapon.version ?? '',
+      compatibleAmmoIds: [] as number[],
+      source: 'canonical combat-engine ammoApplicability'
+    };
+  }
+  const compatibleAmmoIds = availableEquipment
+    .filter((item) => item.slot === 'ammo' && ammoApplicability(weaponId, item.id) === AmmoApplicability.INCLUDED)
+    .map((item) => item.id);
+  return {
+    status: compatibleAmmoIds.length ? 'required' as const : 'incomplete-source' as const,
+    weaponId,
+    weaponName: weapon.name,
+    weaponVersion: weapon.version ?? '',
+    compatibleAmmoIds,
+    source: 'canonical combat-engine ammoApplicability'
   };
 }
 
