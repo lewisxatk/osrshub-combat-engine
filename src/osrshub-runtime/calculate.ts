@@ -52,6 +52,60 @@ export function listOsrsHubSpells() {
   }));
 }
 
+/**
+ * Structural inventory of the exact canonical datasets used by the calculator.
+ * This endpoint reports field presence only; it does not infer missing weaknesses
+ * or claim that every source field is independently verified.
+ */
+export function getOsrsHubCatalogueSummary() {
+  const monsters = getMonsters();
+  const equipment = availableEquipment;
+  const slotRecordCounts: Record<string, number> = {};
+  const attributeRecordCounts: Record<string, number> = {};
+  const weaknessElementRecordCounts: Record<string, number> = {};
+  let monstersWithElementalWeakness = 0;
+  let monstersWithAttributes = 0;
+  for (const monster of monsters) {
+    for (const attribute of monster.attributes ?? []) {
+      attributeRecordCounts[attribute] = (attributeRecordCounts[attribute] ?? 0) + 1;
+      monstersWithAttributes++;
+    }
+    if (monster.weakness?.element && monster.weakness.element !== 'none') {
+      monstersWithElementalWeakness++;
+      const element = String(monster.weakness.element);
+      weaknessElementRecordCounts[element] = (weaknessElementRecordCounts[element] ?? 0) + 1;
+    }
+  }
+  let twoHandedRecords = 0;
+  for (const item of equipment) {
+    slotRecordCounts[item.slot] = (slotRecordCounts[item.slot] ?? 0) + 1;
+    if (item.isTwoHanded) twoHandedRecords++;
+  }
+  return {
+    status: 'ok',
+    source: 'canonical OSRS DPS Calculator datasets',
+    semantics: {
+      weakness: 'Elemental spell weakness, not the same field as stab/slash/crush/ranged/magic defence.',
+      defensive: 'The monster defensive object contains separate attack-style defence values.',
+      variants: 'All monster and equipment variants are retained; monster recordIndex is required where numeric IDs are ambiguous.',
+      prices: 'The canonical catalogue does not provide live Grand Exchange prices.'
+    },
+    monsters: {
+      records: monsters.length,
+      withElementalWeakness: monstersWithElementalWeakness,
+      withoutRecordedElementalWeakness: monsters.length - monstersWithElementalWeakness,
+      withAtLeastOneAttribute: new Set(monsters.filter(m => (m.attributes ?? []).length).map(m => m.id + ':' + m.name + ':' + (m.version ?? ''))).size,
+      weaknessElementRecordCounts,
+      attributeRecordCounts
+    },
+    equipment: {
+      records: equipment.length,
+      twoHandedRecords,
+      slotRecordCounts
+    }
+  };
+}
+
 export function listOsrsHubMonsters(
   { offset = 0, limit = 500 }: { offset?: number; limit?: number } = {},
 ) {
