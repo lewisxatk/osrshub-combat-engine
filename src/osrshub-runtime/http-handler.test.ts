@@ -81,6 +81,35 @@ describe('OSRS Hub runtime CORS allowlist', () => {
 });
 
 describe('canonical catalogue endpoints', () => {
+  test('reports complete engine catalogue coverage without conflating elemental weakness and defence', async () => {
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/catalogue-summary'),
+    );
+    const payload = await response.json() as {
+      status: string;
+      semantics: { weakness: string; defensive: string; variants: string; prices: string };
+      monsters: { records: number; withElementalWeakness: number; withoutRecordedElementalWeakness: number; weaknessElementRecordCounts: Record<string, number> };
+      equipment: { records: number; twoHandedRecords: number; slotRecordCounts: Record<string, number> };
+    };
+    expect(response.status).toBe(200);
+    expect(payload.status).toBe('ok');
+    expect(payload.monsters.records).toBeGreaterThan(2000);
+    expect(payload.monsters.withElementalWeakness + payload.monsters.withoutRecordedElementalWeakness).toBe(payload.monsters.records);
+    expect(payload.equipment.records).toBeGreaterThan(5000);
+    expect(payload.equipment.slotRecordCounts.weapon).toBeGreaterThan(0);
+    expect(payload.equipment.twoHandedRecords).toBeGreaterThan(0);
+    expect(payload.semantics.weakness).toContain('Elemental spell weakness');
+    expect(payload.semantics.defensive).toContain('attack-style defence');
+    expect(payload.semantics.variants).toContain('recordIndex');
+    expect(payload.semantics.prices).toContain('live Grand Exchange prices');
+  });
+
+  test('rejects non-GET requests to the catalogue summary', async () => {
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/catalogue-summary', { method: 'POST' }),
+    );
+    expect(response.status).toBe(405);
+  });
   test('returns paginated canonical monsters with their engine IDs', async () => {
     const response = await handleOsrsHubRuntimeRequest(
       new Request('https://combat.example.workers.dev/api/monsters?offset=0&limit=3'),
