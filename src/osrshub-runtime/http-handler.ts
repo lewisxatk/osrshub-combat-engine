@@ -9,6 +9,7 @@ import {
   listOsrsHubSpells,
   listOsrsHubMonsters,
   listOsrsHubEquipment,
+  getOsrsHubCatalogueSummary,
   OsrsHubCalculationRequest,
 } from './calculate';
 
@@ -82,6 +83,13 @@ export async function handleOsrsHubRuntimeRequest(
       return response({ status: 'rejected', error: 'Method not allowed.' }, 405, corsOrigin);
     }
     return response({ status: 'ok', service: 'osrshub-combat-runtime' }, 200, corsOrigin);
+  }
+
+  if (url.pathname === '/api/catalogue-summary') {
+    if (request.method !== 'GET') {
+      return response({ status: 'rejected', error: 'Method not allowed.' }, 405, corsOrigin);
+    }
+    return response(getOsrsHubCatalogueSummary(), 200, corsOrigin);
   }
 
   if (url.pathname === '/api/monsters') {
