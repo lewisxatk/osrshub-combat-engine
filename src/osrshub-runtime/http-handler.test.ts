@@ -184,6 +184,40 @@ describe('canonical catalogue endpoints', () => {
     expect(mismatch.status).toBe('identity-mismatch');
   });
 
+  test('uses the engine ammo matrix: Webweaver bows generate their own ammo and cannot take dragon javelins', async () => {
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/ammo-compatibility?weaponId=27655'),
+    );
+    const payload = await response.json() as { status: string; compatibleAmmoIds: number[] };
+    expect(response.status).toBe(200);
+    expect(payload.status).toBe('not-required');
+    expect(payload.compatibleAmmoIds).toEqual([]);
+  });
+
+  test('requires valid bolts for dragon hunter crossbow and javelins for ballista', async () => {
+    const crossbowResponse = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/ammo-compatibility?weaponId=21012'),
+    );
+    const crossbow = await crossbowResponse.json() as { status: string; compatibleAmmoIds: number[] };
+    expect(crossbow.status).toBe('required');
+    expect(crossbow.compatibleAmmoIds).toContain(21905);
+
+    const ballistaResponse = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/ammo-compatibility?weaponId=19481'),
+    );
+    const ballista = await ballistaResponse.json() as { status: string; compatibleAmmoIds: number[] };
+    expect(ballista.status).toBe('required');
+    expect(ballista.compatibleAmmoIds).toContain(19484);
+    expect(ballista.compatibleAmmoIds).not.toContain(11212);
+  });
+
+  test('rejects unknown ammo-compatibility weapon IDs', async () => {
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/ammo-compatibility?weaponId=999999999'),
+    );
+    expect(response.status).toBe(404);
+  });
+
   test('returns canonical equipment filtered by slot', async () => {
     const response = await handleOsrsHubRuntimeRequest(
       new Request('https://combat.example.workers.dev/api/equipment?slot=weapon&limit=5'),
