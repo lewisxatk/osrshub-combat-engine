@@ -66,13 +66,11 @@ export function getOsrsHubCatalogueSummary() {
   const attributeRecordCounts: Record<string, number> = {};
   const weaknessElementRecordCounts: Record<string, number> = {};
   let monstersWithElementalWeakness = 0;
-  let monstersWithAttributes = 0;
   for (const monster of monsters) {
     for (const attribute of monster.attributes ?? []) {
       attributeRecordCounts[attribute] = (attributeRecordCounts[attribute] ?? 0) + 1;
-      monstersWithAttributes++;
     }
-    if (monster.weakness?.element && monster.weakness.element !== 'none') {
+    if (monster.weakness?.element) {
       monstersWithElementalWeakness++;
       const element = String(monster.weakness.element);
       weaknessElementRecordCounts[element] = (weaknessElementRecordCounts[element] ?? 0) + 1;
