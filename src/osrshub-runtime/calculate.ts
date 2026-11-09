@@ -71,7 +71,7 @@ export function getOsrsHubCatalogueSummary() {
       attributeRecordCounts[attribute] = (attributeRecordCounts[attribute] ?? 0) + 1;
     }
     if (monster.weakness?.element) {
-      monstersWithElementalWeakness++;
+      monstersWithElementalWeakness += 1;
       const element = String(monster.weakness.element);
       weaknessElementRecordCounts[element] = (weaknessElementRecordCounts[element] ?? 0) + 1;
     }
@@ -79,7 +79,7 @@ export function getOsrsHubCatalogueSummary() {
   let twoHandedRecords = 0;
   for (const item of equipment) {
     slotRecordCounts[item.slot] = (slotRecordCounts[item.slot] ?? 0) + 1;
-    if (item.isTwoHanded) twoHandedRecords++;
+    if (item.isTwoHanded) twoHandedRecords += 1;
   }
   return {
     status: 'ok',
@@ -94,7 +94,7 @@ export function getOsrsHubCatalogueSummary() {
       records: monsters.length,
       withElementalWeakness: monstersWithElementalWeakness,
       withoutRecordedElementalWeakness: monsters.length - monstersWithElementalWeakness,
-      withAtLeastOneAttribute: new Set(monsters.filter(m => (m.attributes ?? []).length).map(m => m.id + ':' + m.name + ':' + (m.version ?? ''))).size,
+      withAtLeastOneAttribute: new Set(monsters.filter(m => (m.attributes ?? []).length).map((m) => `${m.id}:${m.name}:${m.version ?? ''}`)).size,
       weaknessElementRecordCounts,
       attributeRecordCounts
     },
@@ -244,7 +244,7 @@ export function getOsrsHubAmmoCompatibility(weaponId: number) {
       weaponName: weapon.name,
       weaponVersion: weapon.version ?? '',
       compatibleAmmoIds: [] as number[],
-      source: 'canonical combat-engine ammoApplicability'
+      source: 'canonical combat-engine ammoApplicability',
     };
   }
   const compatibleAmmoIds = availableEquipment
@@ -256,7 +256,7 @@ export function getOsrsHubAmmoCompatibility(weaponId: number) {
     weaponName: weapon.name,
     weaponVersion: weapon.version ?? '',
     compatibleAmmoIds,
-    source: 'canonical combat-engine ammoApplicability'
+    source: 'canonical combat-engine ammoApplicability',
   };
 }
 
