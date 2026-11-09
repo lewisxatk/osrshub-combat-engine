@@ -88,21 +88,21 @@ export function getOsrsHubCatalogueSummary() {
       weakness: 'Elemental spell weakness, not the same field as stab/slash/crush/ranged/magic defence.',
       defensive: 'The monster defensive object contains separate attack-style defence values.',
       variants: 'All monster and equipment variants are retained; monster recordIndex is required where numeric IDs are ambiguous.',
-      prices: 'The canonical catalogue does not provide live Grand Exchange prices.'
+      prices: 'The canonical catalogue does not provide live Grand Exchange prices.',
     },
     monsters: {
       records: monsters.length,
       withElementalWeakness: monstersWithElementalWeakness,
       withoutRecordedElementalWeakness: monsters.length - monstersWithElementalWeakness,
-      withAtLeastOneAttribute: new Set(monsters.filter(m => (m.attributes ?? []).length).map((m) => `${m.id}:${m.name}:${m.version ?? ''}`)).size,
+      withAtLeastOneAttribute: new Set(monsters.filter((m) => (m.attributes ?? []).length).map((m) => `${m.id}:${m.name}:${m.version ?? ''}`)).size,
       weaknessElementRecordCounts,
-      attributeRecordCounts
+      attributeRecordCounts,
     },
     equipment: {
       records: equipment.length,
       twoHandedRecords,
-      slotRecordCounts
-    }
+      slotRecordCounts,
+    },
   };
 }
 
