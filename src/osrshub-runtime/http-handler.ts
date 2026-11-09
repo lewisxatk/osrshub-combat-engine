@@ -9,6 +9,8 @@ import {
   listOsrsHubSpells,
   listOsrsHubMonsters,
   listOsrsHubEquipment,
+  getOsrsHubCatalogueSummary,
+  getOsrsHubAmmoCompatibility,
   OsrsHubCalculationRequest,
 } from './calculate';
 
@@ -82,6 +84,28 @@ export async function handleOsrsHubRuntimeRequest(
       return response({ status: 'rejected', error: 'Method not allowed.' }, 405, corsOrigin);
     }
     return response({ status: 'ok', service: 'osrshub-combat-runtime' }, 200, corsOrigin);
+  }
+
+  if (url.pathname === '/api/ammo-compatibility') {
+    if (request.method !== 'GET') {
+      return response({ status: 'rejected', error: 'Method not allowed.' }, 405, corsOrigin);
+    }
+    const weaponId = Number(url.searchParams.get('weaponId'));
+    const result = getOsrsHubAmmoCompatibility(weaponId);
+    if (result.status === 'invalid') {
+      return response({ status: 'rejected', error: result.issue }, 400, corsOrigin);
+    }
+    if (result.status === 'not-found') {
+      return response({ status: 'not-found', error: result.issue }, 404, corsOrigin);
+    }
+    return response(result, 200, corsOrigin);
+  }
+
+  if (url.pathname === '/api/catalogue-summary') {
+    if (request.method !== 'GET') {
+      return response({ status: 'rejected', error: 'Method not allowed.' }, 405, corsOrigin);
+    }
+    return response(getOsrsHubCatalogueSummary(), 200, corsOrigin);
   }
 
   if (url.pathname === '/api/monsters') {

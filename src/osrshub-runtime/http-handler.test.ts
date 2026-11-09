@@ -81,6 +81,35 @@ describe('OSRS Hub runtime CORS allowlist', () => {
 });
 
 describe('canonical catalogue endpoints', () => {
+  test('reports complete engine catalogue coverage without conflating elemental weakness and defence', async () => {
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/catalogue-summary'),
+    );
+    const payload = await response.json() as {
+      status: string;
+      semantics: { weakness: string; defensive: string; variants: string; prices: string };
+      monsters: { records: number; withElementalWeakness: number; withoutRecordedElementalWeakness: number; weaknessElementRecordCounts: Record<string, number> };
+      equipment: { records: number; twoHandedRecords: number; slotRecordCounts: Record<string, number> };
+    };
+    expect(response.status).toBe(200);
+    expect(payload.status).toBe('ok');
+    expect(payload.monsters.records).toBeGreaterThan(2000);
+    expect(payload.monsters.withElementalWeakness + payload.monsters.withoutRecordedElementalWeakness).toBe(payload.monsters.records);
+    expect(payload.equipment.records).toBeGreaterThan(5000);
+    expect(payload.equipment.slotRecordCounts.weapon).toBeGreaterThan(0);
+    expect(payload.equipment.twoHandedRecords).toBeGreaterThan(0);
+    expect(payload.semantics.weakness).toContain('Elemental spell weakness');
+    expect(payload.semantics.defensive).toContain('attack-style defence');
+    expect(payload.semantics.variants).toContain('recordIndex');
+    expect(payload.semantics.prices).toContain('live Grand Exchange prices');
+  });
+
+  test('rejects non-GET requests to the catalogue summary', async () => {
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/catalogue-summary', { method: 'POST' }),
+    );
+    expect(response.status).toBe(405);
+  });
   test('returns paginated canonical monsters with their engine IDs', async () => {
     const response = await handleOsrsHubRuntimeRequest(
       new Request('https://combat.example.workers.dev/api/monsters?offset=0&limit=3'),
@@ -153,6 +182,40 @@ describe('canonical catalogue endpoints', () => {
       monsterName: 'Not the selected monster',
     });
     expect(mismatch.status).toBe('identity-mismatch');
+  });
+
+  test('uses the engine ammo matrix: Webweaver bows generate their own ammo and cannot take dragon javelins', async () => {
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/ammo-compatibility?weaponId=27655'),
+    );
+    const payload = await response.json() as { status: string; compatibleAmmoIds: number[] };
+    expect(response.status).toBe(200);
+    expect(payload.status).toBe('not-required');
+    expect(payload.compatibleAmmoIds).toEqual([]);
+  });
+
+  test('requires valid bolts for dragon hunter crossbow and javelins for ballista', async () => {
+    const crossbowResponse = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/ammo-compatibility?weaponId=21012'),
+    );
+    const crossbow = await crossbowResponse.json() as { status: string; compatibleAmmoIds: number[] };
+    expect(crossbow.status).toBe('required');
+    expect(crossbow.compatibleAmmoIds).toContain(21905);
+
+    const ballistaResponse = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/ammo-compatibility?weaponId=19481'),
+    );
+    const ballista = await ballistaResponse.json() as { status: string; compatibleAmmoIds: number[] };
+    expect(ballista.status).toBe('required');
+    expect(ballista.compatibleAmmoIds).toContain(19484);
+    expect(ballista.compatibleAmmoIds).not.toContain(11212);
+  });
+
+  test('rejects unknown ammo-compatibility weapon IDs', async () => {
+    const response = await handleOsrsHubRuntimeRequest(
+      new Request('https://combat.example.workers.dev/api/ammo-compatibility?weaponId=999999999'),
+    );
+    expect(response.status).toBe(404);
   });
 
   test('returns canonical equipment filtered by slot', async () => {
